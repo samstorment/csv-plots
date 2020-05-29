@@ -6,7 +6,7 @@ from matplotlib.figure import Figure
 from tkinter.filedialog import askopenfilename
 from tkinter import colorchooser
 from functools import partial
-import csv
+import csvmanager as csv
 import color
 import os
 
@@ -28,33 +28,28 @@ class Scatter:
         toolbar.update()
         return figure, plot, canvas
 
-    # instead of having a sidebar and sidebarROw, could just make a frame method with more parameters
-    def sidebar(self, barside=tk.RIGHT, barcolor='white'):
-        sidebar = tk.Frame(self.root, bg=barcolor)
-        sidebar.pack(expand=0, fill='y', side=barside)
+    # Helps me visualize frames as html divs
+    def div(self, parent, color='white', side=tk.TOP, padx=0, pady=0, fill='both'):
+        sidebar = tk.Frame(parent, bg=color)
+        sidebar.pack(expand=0, fill=fill, side=side, padx=padx, pady=pady)
         return sidebar
-    
-    def sidebarRow(self, parent, color='white', padx=0, pady=0):
-        sidebarRow = tk.Frame(parent, bg=color)
-        sidebarRow.pack(expand=0, fill='both', padx=padx, pady=pady)
-        return sidebarRow
 
     def button(self, parent, text=None, width=10, color='white', side=tk.LEFT, padx=5, pady=5, command=None):
         button = tk.Button(parent, text=text, width=width, bg=color, command=command)
         button.pack(side=side, padx=padx, pady=pady)
         return button
         
-    def label(self, parent, text=None, width=10, color='white', side=tk.LEFT, padx=5, pady=5, txtvar=None):
+    def label(self, parent, text=None, width=10, color='lightgray', side=tk.LEFT, padx=5, pady=5, txtvar=None):
         label = tk.Label(parent, text=text, width=width, bg=color, textvariable=txtvar)
         label.pack(side=side, padx=padx, pady=pady)
         return label
 
-    def entry(self, parent, width=30, color='white', side=tk.RIGHT, padx=5, pady=5, txtvar=None):
+    def entry(self, parent, width=35, color='white', side=tk.LEFT, padx=5, pady=5, txtvar=None):
         entry = tk.Entry(parent, width=width, bg=color, textvariable=txtvar)
         entry.pack(side=side, padx=padx, pady=pady)
         return entry
 
-    def dropdown(self, parent, txtvar, options, side=tk.RIGHT, padx=5, pady=5, defaultval=''):
+    def dropdown(self, parent, txtvar, options=[''], side=tk.LEFT, padx=5, pady=5, defaultval=''):
         txtvar.set(defaultval)
         dropdown = tk.OptionMenu(parent, txtvar, *options)
         dropdown.pack(side=side, padx=padx, pady=pady)
@@ -98,53 +93,80 @@ class Scatter:
         txtvar.set(col)
         btn.configure(bg=col, text=col, fg=color.invert(col, 1))
 
-    # 
-    def fileBtnClick(self, txtvar, label):
+
+    def fileBtnClick(self, label, xdropdown, ydropdown, xvar, yvar):
         filepath = askopenfilename()
-        txtvar.set(filepath)
         filename = os.path.basename(filepath)
+
+        options = csv.loadColNames(filepath)
+        self.changeDropdown(xdropdown, xvar, options)
+        self.changeDropdown(ydropdown, yvar, options)
+
         label.configure(text=filename)
+
+    def submitBtnCLick(self, titleentry, xentry, yentry, colors, figure, plot, canvas):
+
+        bgcol = colors[0].get()
+    
+        
+        self.changeTitle(plot, titleentry.get(), color.invert(bgcol, 1))
+        figure.patch.set_facecolor(bgcol)
+        canvas.draw()
 
 def main():
 
     root = tk.Tk()
     s = Scatter(root)
 
-    sidebar = s.sidebar()
+    sidebar = s.div(root, side=tk.RIGHT)
     fig, plt, canv = s.scatter()
     
-    filerow = s.sidebarRow(sidebar)
-    filepath = tk.StringVar()
-    filelabel = s.label(filerow, width=35, color='lightgray', side=tk.RIGHT)
-    s.button(filerow, 'CSV:', width=6, command=partial(s.fileBtnClick, filepath, filelabel))
+    filerow = s.div(sidebar)
+    filebutton = s.button(filerow, 'CSV:')
+    filelabel = s.label(filerow, width=30)
 
-    titlerow = s.sidebarRow(sidebar)
-    titlecolor = tk.StringVar()
-    s.label(titlerow, 'Title', color='lightgray', width=7)
-    s.entry(titlerow, side=tk.LEFT)
-    titlebtn = s.button(titlerow, '#ffffff', width=7, side=tk.RIGHT, color='white')
-    titlebtn.configure(command=partial(s.colorBtnClick, titlecolor, titlebtn))
+    titlerow = s.div(sidebar)
+    s.label(titlerow, 'Title')
+    titleentry = s.entry(titlerow, side=tk.RIGHT)
 
-    xaxisrow = s.sidebarRow(sidebar)
-    xaxiscolor = tk.StringVar()
-    s.label(xaxisrow, 'X-Axis', color='lightgray', width=7)
-    s.entry(xaxisrow, side=tk.LEFT)
-    xaxisbtn = s.button(xaxisrow, '#ffffff', width=7, side=tk.RIGHT, color='white')
-    xaxisbtn.configure(command=partial(s.colorBtnClick, xaxiscolor, xaxisbtn))
+    xlblrow = s.div(sidebar)
+    s.label(xlblrow, 'X-Label')
+    xentry = s.entry(xlblrow, side=tk.RIGHT)
 
-    yaxisrow = s.sidebarRow(sidebar)
-    yaxiscolor = tk.StringVar()
-    s.label(yaxisrow, 'Y-Axis', color='lightgray', width=7)
-    s.entry(yaxisrow, side=tk.LEFT)
-    yaxisbtn = s.button(yaxisrow, '#ffffff', width=7, side=tk.RIGHT, color='white')
-    yaxisbtn.configure(command=partial(s.colorBtnClick, yaxiscolor, yaxisbtn))
+    ylblrow = s.div(sidebar)
+    s.label(ylblrow, 'Y-Label')
+    yentry = s.entry(ylblrow, side=tk.RIGHT)
+
+    xdatavar = tk.StringVar()
+    xdatarow = s.div(sidebar)
+    s.label(xdatarow, 'X-Data')
+    xdropdown = s.dropdown(xdatarow, xdatavar, side=tk.RIGHT)
+
+    ydatavar = tk.StringVar()
+    ydatarow = s.div(sidebar)
+    s.label(ydatarow, 'Y-Data')
+    ydropdown = s.dropdown(ydatarow, ydatavar, side=tk.RIGHT)
+
+    filebutton.configure(command=partial(s.fileBtnClick, filelabel, xdropdown, ydropdown, xdatavar, ydatavar))
+
+    bgcolvar = tk.StringVar()
+    bgcolrow = s.div(sidebar)
+    s.label(bgcolrow, 'Background Color', width=15)
+    bgcolbtn = s.button(bgcolrow, '#000000', side=tk.RIGHT)
+    bgcolbtn.configure(command=partial(s.colorBtnClick, bgcolvar, bgcolbtn))
+
+
+    colors = [bgcolvar]
+
+    submitrow = s.div(sidebar)
+    s.button(submitrow, 'Submit', width=10, side=tk.RIGHT, command=partial(s.submitBtnCLick, titleentry, xentry, yentry, colors, fig, plt, canv))
+
+
+
 
 
     root.mainloop()
 
-    # some test prints
-    print(filepath.get())
-    print(yaxiscolor.get())
 
 
 main()

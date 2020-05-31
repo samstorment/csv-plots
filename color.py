@@ -23,7 +23,7 @@ def invert(hexStr, bw):
 
     # if you want to just get a black or white color
     if (bw):
-        if ((r * 0.299 + g * 0.587 + b * 0.114) > 186):
+        if ((r * 0.299 + g * 0.587 + b * 0.114) > 135): # > 186 was initial val
             return '#000000'
         else:
             return '#ffffff'

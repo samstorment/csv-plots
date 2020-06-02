@@ -35,7 +35,6 @@ class Scatter:
     def scatter(self, x=[], y=[]):
         figure = Figure()
         plot = figure.add_subplot(111)
-        plot.scatter(x, y)
         canvas = FigureCanvasTkAgg(figure, master=self.root)
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
@@ -167,7 +166,8 @@ class Scatter:
             if showlabels.get():
                 self.addDataLabels(datavars, datalblclr, optionlists)
 
-        self.graph.plot.scatter(xlist, ylist, color=pointclr)
+        # change this to .scatter, .bar, or .plot for scatter, line, and bar graphs
+        self.graph.plot.plot(xlist, ylist, color=pointclr)
 
         self.graph.canvas.draw()
 

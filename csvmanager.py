@@ -32,7 +32,7 @@ class CSV:
                     colNum = self.colDict[colName]
 
                     value = row[colNum]
-                    if value == '':
+                    if value == '' or value == '--':
                         value = 0.0
                     elif colName == 'Name':
                         value = value.split('\\')[0]

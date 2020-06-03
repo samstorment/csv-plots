@@ -185,6 +185,15 @@ class Scatter:
 
         self.graph.canvas.draw()
 
+    def saveBtnClick(self, bgclr):
+        # save the file as the name in the save entry box, for some reason we have to manually set the save bg color to the bg color selected
+
+        # (supported formats: eps, pdf, pgf, png, ps, raw, rgba, svg, svgz)
+        # when saving pgf: RuntimeError: Latex command not found. Install 'xelatex' or change pgf.texsystem to the desired command.
+        files = [('.png', '*.png'), ('.svg', '*.svg'), ('.svgz', '*.svgz'), ('.pdf', '*.pdf'), ('.eps', '*.eps'), ('.pgf', '*.pgf'), ('.ps', '*.ps'), ('.raw', '*.raw'), ('.rgba', '*.rgba')]
+        filepath = tk.filedialog.asksaveasfile(filetypes=files, defaultextension=files).name
+        self.graph.figure.savefig(filepath, dpi=95, facecolor=bgclr.get(), edgecolor='green', orientation='portrait', transparent=False)
+
 
 def main():
 
@@ -194,6 +203,10 @@ def main():
     sidebar = s.div(root, side=tk.RIGHT)
     s.scatter()
     
+    
+    saverow = s.div(sidebar)
+    savebtn = s.button(saverow, 'Save', width=10, side=tk.RIGHT)
+
     filerow = s.div(sidebar)
     filebutton = s.button(filerow, 'CSV:')
     filelabel = s.label(filerow, width=30)
@@ -262,9 +275,11 @@ def main():
     dropdowns = Vec3(xdropdown, ydropdown, datalbldropdown)
     datavars = Vec3(xdatavar, ydatavar, datalblvar)
     filebutton.configure(command=partial(s.fileBtnClick, filelabel, dropdowns, datavars))
+    savebtn.configure(command=partial(s.saveBtnClick, bgclrvar))
 
     submitrow = s.div(sidebar)
     s.button(submitrow, 'Submit', width=10, side=tk.RIGHT, command=partial(s.submitBtnCLick, entries, datavars, colors, datacheckvar, typevar, regvar))
+    
     root.bind('<Return>', lambda e=None : s.submitBtnCLick(entries, datavars, colors, datacheckvar, typevar, regvar))
 
     root.mainloop()

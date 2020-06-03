@@ -5,11 +5,12 @@ from tkinter.filedialog import askopenfilename
 from tkinter import colorchooser
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.figure import Figure
+import numpy
+import os
 from functools import partial
+from typing import NamedTuple
 import csvmanager as csv
 import color as clr
-import os
-from typing import NamedTuple
 
 
 class Vec3:
@@ -137,12 +138,13 @@ class Scatter:
 
         label.configure(text=filename)
 
-    def submitBtnCLick(self, entries, datavars, colors, showlabels):
+    def submitBtnCLick(self, entries, datavars, colors, showlabels, plottype, showreg):
 
         bgclr = colors[0].get()
         graphclr = colors[1].get()
         pointclr = colors[2].get()
         datalblclr = colors[3].get()
+        reglineclr = colors[4].get()
         txtclr = clr.invert(bgclr, 1)
     
         xoption = datavars.x.get()
@@ -162,12 +164,24 @@ class Scatter:
         if xoption != '' and yoption != '':
             xlist = self.csvfile.getAllCol(xoption)
             ylist = self.csvfile.getAllCol(yoption)
-            optionlists = Vec3(xlist, ylist, None)
             if showlabels.get():
+                optionlists = Vec3(xlist, ylist, None)
                 self.addDataLabels(datavars, datalblclr, optionlists)
 
         # change this to .scatter, .bar, or .plot for scatter, line, and bar graphs
-        self.graph.plot.plot(xlist, ylist, color=pointclr)
+        if plottype.get() == 'bar':
+            self.graph.plot.bar(xlist, ylist, color=pointclr)
+        elif plottype.get() == 'line':
+            self.graph.plot.plot(xlist, ylist, color=pointclr)
+        else:
+            self.graph.plot.scatter(xlist, ylist, color=pointclr)
+
+
+        if showreg.get():
+            x = numpy.array(xlist)
+            y = numpy.array(ylist)
+            m, b = numpy.polyfit(x, y, 1)
+            self.graph.plot.plot(xlist, m*x + b, color=reglineclr)
 
         self.graph.canvas.draw()
 
@@ -221,6 +235,16 @@ def main():
     datalblclrvar = tk.StringVar()
     s.colorRow(sidebar, datalblclrvar, 'Data Label Color', '#ff00cc')
 
+    # regression
+    regvar = tk.IntVar()
+    regrow = s.div(sidebar)
+    s.label(regrow, 'Best Fit Line')
+    s.checkbox(regrow, regvar, 'Show')
+    regclrvar = tk.StringVar()
+    regclrvar.set('#000000')
+    regclrbtn = s.button(regrow, regclrvar.get(), side=tk.RIGHT, color=regclrvar.get())
+    regclrbtn.configure(command=partial(s.colorBtnClick, regclrvar, regclrbtn))
+
     datalblvar = tk.StringVar()
     datacheckvar = tk.IntVar()
     datalblrow = s.div(sidebar)
@@ -228,17 +252,20 @@ def main():
     datalbldropdown = s.dropdown(datalblrow, datalblvar, side=tk.RIGHT)
     s.checkbox(datalblrow, datacheckvar, 'Show')
 
-
-
-    colors = [bgclrvar, graphclrvar, pointclrvar, datalblclrvar]
+    typevar = tk.StringVar()
+    typerow = s.div(sidebar)
+    s.label(typerow, 'Plot Type')
+    plottypes = ['scatter', 'line', 'bar']
+    s.dropdown(typerow, typevar, side=tk.RIGHT, options=plottypes, defaultval=plottypes[0])
+    
+    colors = [bgclrvar, graphclrvar, pointclrvar, datalblclrvar, regclrvar]
     dropdowns = Vec3(xdropdown, ydropdown, datalbldropdown)
     datavars = Vec3(xdatavar, ydatavar, datalblvar)
     filebutton.configure(command=partial(s.fileBtnClick, filelabel, dropdowns, datavars))
 
-
     submitrow = s.div(sidebar)
-    s.button(submitrow, 'Submit', width=10, side=tk.RIGHT, command=partial(s.submitBtnCLick, entries, datavars, colors, datacheckvar))
-    root.bind('<Return>', lambda e=None : s.submitBtnCLick(entries, datavars, colors, datacheckvar))
+    s.button(submitrow, 'Submit', width=10, side=tk.RIGHT, command=partial(s.submitBtnCLick, entries, datavars, colors, datacheckvar, typevar, regvar))
+    root.bind('<Return>', lambda e=None : s.submitBtnCLick(entries, datavars, colors, datacheckvar, typevar, regvar))
 
     root.mainloop()
 
